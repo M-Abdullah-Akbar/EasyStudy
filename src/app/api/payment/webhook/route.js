@@ -24,7 +24,7 @@ export async function POST(req) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        
+
         // Update user's membership status and customer ID
         await db
           .update(usersTable)
@@ -38,7 +38,7 @@ export async function POST(req) {
       }
       case 'customer.subscription.updated': {
         const subscription = event.data.object;
-        
+
         // Update user's membership status when subscription is updated
         await db
           .update(usersTable)

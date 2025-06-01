@@ -16,7 +16,6 @@ function Course() {
   }, []);
   const getCourse = async () => {
     const resp = await axios.get("/api/courses?courseId=" + courseId);
-    console.log(resp);
     setCourse(resp.data.result);
   };
   return (

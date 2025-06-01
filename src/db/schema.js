@@ -35,9 +35,3 @@ export const flashCardTable = pgTable("flashCard", {
   type: varchar().notNull(),
   status: varchar().default("Generating")
 });
-
-export const paymentTable = pgTable("paymentRecord", {
-  id: serial().primaryKey(),
-  customerId: varchar(),
-  sessionId: varchar()
-});
