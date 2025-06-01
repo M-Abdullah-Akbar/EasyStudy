@@ -8,6 +8,8 @@ import Link from "next/link";
 
 function MaterialCardItem({ item, studyTypeContent, course, refreshData }) {
   const [loading, setLoading] = useState(false);
+  const [localReady, setLocalReady] = useState(false);
+
   const generateContent = async () => {
     toast("Generating content...");
     setLoading(true);
@@ -16,27 +18,35 @@ function MaterialCardItem({ item, studyTypeContent, course, refreshData }) {
       chapters = chapter.ChapterTitle + "," + chapters;
     });
 
-    const res = await axios.post("/api/generate-study-type-content", {
-      courseId: course?.courseId,
-      type: item.name,
-      chapters: chapters,
-    });
-    setLoading(false);
-    refreshData(true);
-    toast("Your Content is ready to View");
+    try {
+      await axios.post("/api/generate-study-type-content", {
+        courseId: course?.courseId,
+        type: item.name,
+        chapters: chapters,
+      });
+      await refreshData(true);
+      toast("Your Content is ready to View");
+      setLocalReady(true);
+    } catch (error) {
+      toast.error("Failed to generate content");
+    } finally {
+      setLoading(false);
+    }
   };
+
   const isNotes = item.type === "notes";
   const isReady = isNotes
     ? Array.isArray(studyTypeContent?.notes) && studyTypeContent.notes.length > 0
     : studyTypeContent?.[item.type] && studyTypeContent[item.type].status === "Ready";
+
   return (
     <Link href={`/course/${course?.courseId}/${item.path}`}>
       <div
         className={`border shadow-md rounded-lg p-5 flex flex-col items-center ${
-          !isReady && "grayscale"
+          !isReady && !localReady && "grayscale"
         }`}
       >
-        {!isReady ? (
+        {!isReady && !localReady ? (
           <h2 className="p-1 px-2 bg-gray-500 text-white rounded-full text-[10px] mb-2">
             Generate
           </h2>
@@ -48,7 +58,7 @@ function MaterialCardItem({ item, studyTypeContent, course, refreshData }) {
         <Image src={item.icon} alt={item.name} width={70} height={70} />
         <h2 className="font-medium mt-3">{item.name}</h2>
         <p className="text-gray-400 text-sm text-center">{item.desc}</p>
-        {!isReady ? (
+        {!isReady && !localReady ? (
           <Button
             className="mt-3 cursor-pointer w-full"
             variant="outline"
@@ -56,8 +66,10 @@ function MaterialCardItem({ item, studyTypeContent, course, refreshData }) {
               e.preventDefault();
               generateContent();
             }}
+            disabled={loading}
           >
-            {loading && <RefreshCcw className="animate-spin" />}Generate
+            {loading ? <RefreshCcw className="animate-spin mr-2" /> : null}
+            {loading ? "Generating..." : "Generate"}
           </Button>
         ) : (
           <Button className="mt-3 cursor-pointer w-full" variant="outline">

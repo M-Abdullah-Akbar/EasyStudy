@@ -10,7 +10,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -19,10 +18,12 @@ function Flashcards() {
   const [flashcards, setFlashcards] = useState([]);
   const [isFlipped, setIsFlipped] = useState();
   const [api, setApi] = useState();
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     getFlashcards();
   }, []);
+
   useEffect(() => {
     if (!api) {
       return;
@@ -31,20 +32,42 @@ function Flashcards() {
       setIsFlipped(false);
     });
   }, [api]);
+
   const getFlashcards = async () => {
-    setLoading(true);
-    const result = await axios.post("/api/study-type", {
-      courseId: courseId,
-      studyType: "Flashcard",
-    });
-    setLoading(false);
-    setFlashcards(result?.data);
+    try {
+      setIsLoading(true);
+      const result = await axios.post("/api/study-type", {
+        courseId: courseId,
+        studyType: "Flashcard",
+      });
+      setFlashcards(result?.data);
+    } catch (error) {
+      console.error("Error fetching flashcards:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
   const handleClick = () => {
     setIsFlipped(!isFlipped);
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className='flex flex-col items-center mb-8'>
+          <h2 className="font-bold text-2xl">Flashcards</h2>
+          <p>The Ultimate Tool to Lock In Concepts!</p>
+        </div>
+        <div className="flex justify-center items-center min-h-[200px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-     <div>
+    <div>
       <h2 className="font-bold text-2xl flex flex-col items-center justify-center">
         Flashcards
       </h2>
@@ -58,27 +81,21 @@ function Flashcards() {
         >
           <CarouselPrevious className="absolute left-2 z-10 cursor-pointer" />
           <CarouselNext className="absolute right-2 z-10 cursor-pointer" />
-          {loading == false ? (
-            <CarouselContent>
-              {flashcards.content &&
-                flashcards.content.map((flashcard, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="flex justify-center items-center"
-                  >
-                    <FlashcardItem
-                      isFlipped={isFlipped}
-                      handleClick={handleClick}
-                      flashcard={flashcard}
-                    />
-                  </CarouselItem>
-                ))}
-            </CarouselContent>
-          ) : (
-            <div className="w-full h-5 p-5 animate-pulse flex justify-center items-center">
-            <RefreshCw className="animate-spin" /> Loading...
-            </div>
-          )}
+          <CarouselContent>
+            {flashcards.content &&
+              flashcards.content.map((flashcard, index) => (
+                <CarouselItem
+                  key={index}
+                  className="flex justify-center items-center"
+                >
+                  <FlashcardItem
+                    isFlipped={isFlipped}
+                    handleClick={handleClick}
+                    flashcard={flashcard}
+                  />
+                </CarouselItem>
+              ))}
+          </CarouselContent>
         </Carousel>
       </div>
       <div className="flex justify-center gap-4 mt-8">
@@ -89,7 +106,7 @@ function Flashcards() {
           <Button variant="outline" className="cursor-pointer">Go to Dashboard</Button>
         </Link>
       </div>
-    </div> 
+    </div>
   );
 }
 

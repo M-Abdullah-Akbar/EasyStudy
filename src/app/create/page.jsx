@@ -58,8 +58,33 @@ function Create() {
           createdBy: user?.primaryEmailAddress?.emailAddress,
           createdAt: date
       });
+      
+      // Navigate to dashboard
       router.replace("/dashboard");
-      toast("Your Course Content is Generating, Click on Refresh Button.");
+      
+      // Start polling for course status
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusCheck = await axios.post('/api/courses', {
+            createdBy: user?.primaryEmailAddress?.emailAddress
+          });
+          
+          const course = statusCheck.data.result.find(c => c.courseId === courseId);
+          if (course && course.status !== "Generating") {
+            clearInterval(pollInterval);
+            toast.success("Your course is ready to view!");
+          }
+        } catch (error) {
+          console.error("Error checking course status:", error);
+        }
+      }, 2000); // Check every 2 seconds
+
+      // Clear interval after 5 minutes (timeout)
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        toast.info("Course generation is taking longer than expected. Please check back later.");
+      }, 300000);
+
     } catch (error) {
       if (error.response?.status === 403) {
         toast.error(error.response.data.error);
