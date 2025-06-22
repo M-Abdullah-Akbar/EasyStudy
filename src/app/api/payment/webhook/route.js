@@ -36,10 +36,10 @@ export async function POST(req) {
 
         break;
       }
-      case 'customer.subscription.updated': {
+      case 'customer.subscription.deleted': {
         const subscription = event.data.object;
 
-        // Update user's membership status when subscription is updated
+        // Update user's membership status when subscription is deleted
         await db
           .update(usersTable)
           .set({

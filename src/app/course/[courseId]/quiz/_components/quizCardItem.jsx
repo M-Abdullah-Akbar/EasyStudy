@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
-
 function QuizCardItem({ quiz, userSelectedOption, selectedAnswer }) {
   const [selectedOption, setSelectedOption] = useState(selectedAnswer);
   const [isAnswered, setIsAnswered] = useState(false);
-
-  // Update selectedOption when selectedAnswer prop changes
   useEffect(() => {
     setSelectedOption(selectedAnswer);
     setIsAnswered(!!selectedAnswer);
   }, [selectedAnswer]);
-
   return (
     quiz && (
       <div className="mt-5 p-3">

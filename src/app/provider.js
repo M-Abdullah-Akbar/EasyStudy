@@ -11,12 +11,20 @@ function Provider({ children }) {
   }, [user]);
 
   const checkIsNewUser = async () => {
-    // Check if user exists in the database
-    const resp = await axios.post("/api/create-user", {
-      user: user,
-    });
-    console.log(resp.data);
+    try {
+      console.log("Provider: Checking if user is new:", user?.primaryEmailAddress?.emailAddress);
+      
+      // Check if user exists in the database
+      const resp = await axios.post("/api/create-user", {
+        user: user,
+      });
+      
+      console.log("Provider: Create user response:", resp.data);
+    } catch (error) {
+      console.error("Provider: Error in checkIsNewUser:", error);
+    }
   };
+
   return <div>{children}</div>;
 }
 

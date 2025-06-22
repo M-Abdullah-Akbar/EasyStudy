@@ -54,3 +54,32 @@ export async function POST(req) {
         return NextResponse.json(serializedResult);
     }
 }
+
+export async function GET(request) {
+  const reqURL = request.url;
+  const { searchParams } = new URL(reqURL);
+  const id = searchParams.get("id");
+
+  try {
+    const result = await db
+      .select()
+      .from(flashCardTable)
+      .where(eq(flashCardTable.id, parseInt(id)));
+    
+    if (result.length === 0) {
+      return NextResponse.json(
+        { error: "Content not found" },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({ result: result[0] });
+
+  } catch (error) {
+    console.error("Error fetching study content status:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch status" },
+      { status: 500 }
+    );
+  }
+}

@@ -6,7 +6,7 @@ import { inngest } from "@/inngest/client";
 import { eq } from "drizzle-orm";
 
 export async function POST(request) {
-    const { courseId, courseType, topic, difficultyLevel, createdBy, createdAt } = await request.json();
+    const { courseId, studyType, topic, difficultyLevel, createdBy, createdAt } = await request.json();
     
     // Get user details to check subscription status
     const userResult = await db
@@ -32,7 +32,7 @@ export async function POST(request) {
     // Insert the course
     const courseResult = await db.insert(studyMaterialTable).values({
         courseId: courseId,
-        courseType: courseType,
+        courseType: studyType,
         topic: topic,
         difficultyLevel: difficultyLevel,
         courseLayout: aiResult,
@@ -45,7 +45,8 @@ export async function POST(request) {
         .set({ totalCourses: user.totalCourses + 1 })
         .where(eq(usersTable.email, createdBy));
 
-    const result = await inngest.send({
+    // Trigger notes generation only
+    const notesResult = await inngest.send({
         name: "notes.generate",
         data: {
             course: courseResult[0].resp,

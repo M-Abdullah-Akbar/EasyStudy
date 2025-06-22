@@ -54,10 +54,10 @@ function ViewQA() {
                 <h1 className='text-2xl font-bold text-center'>Question & Answer</h1>
             </div>
             
-            {qa?.[0]?.content?.questions ? (
+            {qa?.[0]?.content?.length > 0 ? (
                 <div className="max-w-4xl mx-auto">
                     <Accordion type="single" collapsible className="w-full space-y-4">
-                        {qa[0].content.questions.map((item, index) => (
+                        {qa[0].content.map((item, index) => (
                             <AccordionItem 
                                 key={index} 
                                 value={`item-${index}`}
@@ -76,7 +76,9 @@ function ViewQA() {
                     </Accordion>
                 </div>
             ) : (
-                <p className="text-center text-gray-500">No questions available</p>
+                <div className='flex flex-col items-center justify-center h-64'>
+                    <p className="text-center text-gray-500">No questions available</p>
+                </div>
             )}
             <div className="flex justify-center gap-4 mt-8">
                 <Link href={`/course/${courseId}`}>

@@ -35,10 +35,17 @@ function QuizPage() {
                 courseId: courseId,
                 studyType: 'Quiz',
             });
-            setQuizData(result.data);
-            setQuiz(result.data?.content?.questions);
+            console.log("Quiz API Response:", result.data); // Log the response
+            if (result.data && result.data.content) {
+                setQuizData(result.data);
+                setQuiz(result.data.content);
+            } else {
+                console.warn("Quiz content not found in the expected format.");
+                setQuiz([]); // Ensure quiz is an array even if no content
+            }
         } catch (error) {
             console.error("Error fetching quiz:", error);
+            toast.error("Failed to load quiz content. Please try again later.");
         } finally {
             setIsLoading(false);
         }
@@ -80,14 +87,31 @@ function QuizPage() {
         );
     }
 
+    if (!quiz || quiz.length === 0) {
+        return (
+            <div className="container mx-auto py-8 text-center">
+                <h2 className='font-bold text-3xl mb-4'>Quiz</h2>
+                <p className="text-gray-500">No quiz content available at the moment.</p>
+                <div className="flex justify-center gap-4 mt-8">
+                    <Link href={`/course/${courseId}`}>
+                        <Button variant="outline" className="cursor-pointer">Go to Course</Button>
+                    </Link>
+                    <Link href="/dashboard">
+                        <Button variant="outline" className="cursor-pointer">Go to Dashboard</Button>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div>
             <h2 className='font-bold text-3xl flex flex-col items-center'>Quiz</h2>
             <StepProgress data={quiz} stepCount={stepCount} setStepCount={(v)=>setStepCount(v)} />
             <div>
                 <QuizCardItem 
-                    quiz={quiz[stepCount]} 
-                    userSelectedOption={(v)=>checkAnswer(v,quiz[stepCount])}
+                    quiz={quiz?.[stepCount]} 
+                    userSelectedOption={(v)=>checkAnswer(v,quiz?.[stepCount])}
                     selectedAnswer={selectedAnswers[stepCount]}
                 />
             </div>

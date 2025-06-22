@@ -14,10 +14,8 @@ import { usersTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 function Create() {
-  let [date,setDate] = useState(new Date());
-  setDate = date.getDate();
   const [step, setStep] = useState(0);
-  const [studyMaterial, setStudyMaterial] = useState([]);
+  const [studyMaterial, setStudyMaterial] = useState({});
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
   const router = useRouter();
@@ -26,6 +24,10 @@ function Create() {
   useEffect(() => {
     user && getUserDetails();
   }, [user]);
+
+  useEffect(() => {
+    console.log(studyMaterial);
+  }, [studyMaterial]);
 
   const getUserDetails = async () => {
     const result = await db.select().from(usersTable).where(eq(usersTable.email, user?.primaryEmailAddress?.emailAddress));
@@ -37,11 +39,16 @@ function Create() {
       ...prevState,
       [fieldName]: fieldValue,
     }));
-    console.log(studyMaterial);
   };
 
   // used to save user input and generate course layout using ai
   const generateCourseOutline = async() => {
+    // Validate required fields
+    if (!studyMaterial.studyType || !studyMaterial.topic || !studyMaterial.difficultyLevel) {
+      toast.error("Please fill in all required fields: Study Type, Topic, and Difficulty Level");
+      return;
+    }
+
     // Check if user has reached course limit
     if (!userDetails?.isMember && userDetails?.totalCourses >= 5) {
       toast.error("You have reached the maximum limit of 5 courses. Please upgrade to create more courses.");
@@ -50,51 +57,66 @@ function Create() {
     }
 
     const courseId = uuidv4();
+    const creationDate = new Date();
     setLoading(true);
+
     try {
-      const result = await axios.post("/api/generate-course-outline", {
+      // 1. Start the generation process
+      await axios.post("/api/generate-course-outline", {
           courseId: courseId,
           ...studyMaterial,
           createdBy: user?.primaryEmailAddress?.emailAddress,
-          createdAt: date
+          createdAt: creationDate
       });
+
+      // 2. Poll for completion status
+      let pollCount = 0;
+      const maxPolls = 30; // 2.5 minutes maximum (30 * 5 seconds) - only notes generation
       
-      // Navigate to dashboard
-      router.replace("/dashboard");
-      
-      // Start polling for course status
       const pollInterval = setInterval(async () => {
+        pollCount++;
+        
+        // Timeout after 2.5 minutes
+        if (pollCount > maxPolls) {
+          clearInterval(pollInterval);
+          setLoading(false);
+          toast.error("Course generation is taking longer than expected. Please check the dashboard later.");
+          router.push("/dashboard");
+          return;
+        }
+        
         try {
-          const statusCheck = await axios.post('/api/courses', {
-            createdBy: user?.primaryEmailAddress?.emailAddress
-          });
-          
-          const course = statusCheck.data.result.find(c => c.courseId === courseId);
-          if (course && course.status !== "Generating") {
+          const statusCheck = await axios.get(`/api/courses?courseId=${courseId}`);
+          const course = statusCheck.data.result;
+
+          if (course && course.status === "Ready") {
             clearInterval(pollInterval);
+            console.log("Course is ready! Redirecting...");
             toast.success("Your course is ready to view!");
+            setLoading(false);
+            router.push("/dashboard");
+          } else {
+            console.log(`Course is still generating... (${pollCount}/${maxPolls})`);
           }
         } catch (error) {
           console.error("Error checking course status:", error);
+          // Stop polling on error to prevent infinite loops
+          clearInterval(pollInterval);
+          setLoading(false);
+          toast.error("Something went wrong while tracking course progress. Please check the dashboard later.");
         }
-      }, 2000); // Check every 2 seconds
-
-      // Clear interval after 5 minutes (timeout)
-      setTimeout(() => {
-        clearInterval(pollInterval);
-        toast.info("Course generation is taking longer than expected. Please check back later.");
-      }, 300000);
+      }, 5000); // Check every 5 seconds
 
     } catch (error) {
+      setLoading(false);
       if (error.response?.status === 403) {
         toast.error(error.response.data.error);
         router.push("/dashboard/upgrade");
       } else {
-        toast.error("Failed to create course. Please try again.");
+        toast.error("Failed to start course creation. Please try again.");
       }
-    } finally {
-      setLoading(false);
     }
+    // Note: setLoading(false) is handled inside the polling logic or in the catch block
   }
   return (
     <div className="flex flex-col items-center mt-20 p-5 md:px-24 lg:px-36 ">
